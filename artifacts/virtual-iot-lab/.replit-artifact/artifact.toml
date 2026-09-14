@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Virtual IoT Lab"
+description = "A browser-based virtual electronics laboratory where engineers place virtual boards and components, wire circuits in a 3D workspace, run Arduino-style programs, and inspect live hardware and serial state."
+version = "1.0.0"
+id = "artifacts/virtual-iot-lab"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21928
+
+[services.development]
+run = "pnpm --filter @workspace/virtual-iot-lab run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/virtual-iot-lab", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/virtual-iot-lab/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21928"
+BASE_PATH = "/"

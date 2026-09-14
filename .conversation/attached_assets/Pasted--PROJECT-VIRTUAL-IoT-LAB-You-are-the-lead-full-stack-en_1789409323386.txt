@@ -1,0 +1,1087 @@
+# PROJECT: VIRTUAL IoT LAB
+
+You are the lead full-stack engineer building a serious MVP/prototype of a browser-based virtual IoT electronics laboratory.
+
+The goal is NOT to make a static 3D visualization.
+
+The goal is to build the foundation of a platform where users can:
+
+1. Place virtual IoT boards and electronic components into a 3D workspace.
+2. Wire components together.
+3. Program supported virtual boards.
+4. Run the program.
+5. See the virtual hardware respond in real time.
+6. Inspect serial output and simulation state.
+7. Save/load projects.
+8. Eventually use the same platform to transition from virtual hardware to real hardware.
+
+Think of the long-term product as:
+
+Wokwi + Tinkercad Circuits + a 3D engineering workspace + an extensible IoT simulation engine.
+
+For this first version, DO NOT attempt to support every Arduino/ESP32/Raspberry Pi feature.
+
+Build a small, extremely solid core that can be expanded later.
+
+==================================================
+PRODUCT NAME
+==================================================
+
+Virtual IoT Lab
+
+Use a professional technical visual identity.
+
+The UI should feel like an engineering/developer tool, not a school project.
+
+==================================================
+PRIMARY MVP DEMO
+==================================================
+
+The first completely working demonstration must be:
+
+Arduino Uno
+    ↓
+GPIO 13
+    ↓
+Resistor
+    ↓
+LED
+    ↓
+GND
+
+The user should be able to:
+
+1. Open the application.
+2. Create a project.
+3. Add an Arduino Uno.
+4. Add an LED.
+5. Add a resistor.
+6. Add a breadboard.
+7. Connect them with virtual wires.
+8. Open the code editor.
+9. Write/run an Arduino-style Blink program.
+10. Click RUN.
+11. See the virtual LED turn ON and OFF according to the program.
+12. See execution messages in the serial console.
+13. Stop/reset the simulation.
+
+This flow is the most important acceptance test.
+
+DO NOT move on to advanced features until this works.
+
+==================================================
+TECHNOLOGY
+==================================================
+
+Use:
+
+- React
+- TypeScript
+- Vite
+- Three.js
+- React Three Fiber
+- @react-three/drei
+- Zustand
+- Tailwind CSS
+- Monaco Editor or another strong browser code editor
+- IndexedDB/localStorage for local projects
+
+Use modern TypeScript.
+
+Avoid unnecessary dependencies.
+
+Do not introduce a backend unless genuinely necessary for the MVP.
+
+The prototype should run locally with:
+
+npm install
+npm run dev
+
+and eventually be deployable to a static hosting platform.
+
+==================================================
+CORE ARCHITECTURE
+==================================================
+
+Separate the application into four major systems:
+
+1. UI
+2. 3D rendering
+3. Hardware simulation
+4. Code/runtime
+
+Architecture:
+
+                ┌───────────────────┐
+                │       UI          │
+                └─────────┬─────────┘
+                          │
+                ┌─────────▼─────────┐
+                │ Project State      │
+                │ Zustand            │
+                └─────────┬─────────┘
+                          │
+              ┌───────────▼───────────┐
+              │ Simulation Engine     │
+              └───────────┬───────────┘
+                          │
+          ┌───────────────┼────────────────┐
+          │               │                │
+      GPIO Engine     Serial Engine    Timing Engine
+          │
+          ▼
+   Virtual Hardware
+          │
+    ┌─────┼───────────────┐
+    ▼     ▼               ▼
+ Arduino  LED          Sensors
+ ESP32    Servo        Actuators
+ Raspberry Pi
+          │
+          ▼
+     3D Visualization
+
+The 3D objects must NOT contain the actual simulation logic.
+
+A 3D LED should visualize the state of a virtual LED.
+
+It should not itself be responsible for determining electrical behavior.
+
+==================================================
+HARDWARE ABSTRACTION
+==================================================
+
+Create generic interfaces.
+
+Example conceptual architecture:
+
+VirtualDevice
+
+    id
+    type
+    name
+    pins
+    state
+    update()
+    reset()
+
+VirtualPin
+
+    id
+    number
+    type
+    mode
+    value
+    voltage
+
+VirtualBoard
+
+    pins
+    gpio
+    pwm
+    adc
+    serial
+
+VirtualComponent
+
+    pins
+    electrical properties
+    simulation state
+
+The exact implementation is up to you, but preserve this abstraction.
+
+The goal is to make adding a new component later easy.
+
+==================================================
+SUPPORTED HARDWARE — MVP
+==================================================
+
+Boards:
+
+1. Arduino Uno
+2. ESP32 DevKit
+
+Add Raspberry Pi as a visual/schematic component if feasible, but DO NOT waste MVP development time attempting to emulate an entire Linux Raspberry Pi.
+
+For Raspberry Pi MVP:
+
+- 3D model
+- GPIO pin representation
+- component metadata
+
+Full Raspberry Pi OS simulation is OUT OF SCOPE.
+
+Basic components:
+
+1. LED
+2. RGB LED
+3. Resistor
+4. Push button
+5. Potentiometer
+6. Buzzer
+7. Servo
+8. Breadboard
+9. Jumper wires
+
+Sensor:
+
+10. HC-SR04 ultrasonic sensor
+
+If time becomes limited, prioritize:
+
+Arduino
+LED
+Resistor
+Button
+Breadboard
+Wire
+Servo
+HC-SR04
+
+==================================================
+3D SYSTEM
+==================================================
+
+Use React Three Fiber.
+
+Create a professional 3D workspace.
+
+Required:
+
+- orbit camera
+- pan
+- zoom
+- grid
+- lighting
+- shadows where practical
+- object selection
+- object movement
+- object rotation
+- object deletion
+- snapping where practical
+- pin visualization
+- wire visualization
+
+Objects should have selectable pins.
+
+Users should be able to:
+
+Click pin A
+    ↓
+Drag
+    ↓
+Click pin B
+    ↓
+Wire created
+
+Represent wires independently from component meshes.
+
+Example:
+
+Connection:
+
+{
+    from: "arduino-1:D13",
+    to: "led-1:anode"
+}
+
+==================================================
+COMPONENT REGISTRY
+==================================================
+
+DO NOT hard-code component rendering throughout the application.
+
+Create a registry.
+
+Conceptually:
+
+componentRegistry:
+
+Arduino Uno
+ESP32
+Raspberry Pi
+LED
+Resistor
+Button
+Servo
+Ultrasonic
+Breadboard
+etc.
+
+Each component definition should provide:
+
+- type
+- display name
+- category
+- pins
+- default properties
+- simulation behavior
+- 3D representation
+- metadata
+
+This should make adding:
+
+DHT11
+OLED
+Relay
+Motor
+LDR
+MQ sensors
+MPU6050
+
+possible later without rewriting the platform.
+
+==================================================
+CODE EDITOR
+==================================================
+
+Create a professional code editor.
+
+Initial language:
+
+Arduino-style C/C++ syntax.
+
+IMPORTANT:
+
+For MVP, DO NOT attempt to implement a complete C++ compiler.
+
+Instead create a controlled Arduino-style simulation runtime/interpreter.
+
+Support the following initially:
+
+setup()
+loop()
+
+pinMode()
+
+digitalWrite()
+
+digitalRead()
+
+analogRead()
+
+analogWrite()
+
+delay()
+
+millis()
+
+Serial.begin()
+
+Serial.print()
+
+Serial.println()
+
+HIGH
+
+LOW
+
+INPUT
+
+OUTPUT
+
+INPUT_PULLUP
+
+The implementation may translate supported Arduino syntax into an internal execution representation.
+
+The architecture MUST make it possible to replace this later with:
+
+C/C++ → WebAssembly → Virtual MCU
+
+without rewriting the entire UI or hardware system.
+
+==================================================
+SIMULATION ENGINE
+==================================================
+
+Create a deterministic simulation engine.
+
+It must handle:
+
+- GPIO state
+- digital inputs
+- digital outputs
+- PWM
+- analog values
+- timing
+- delay
+- serial output
+- component state changes
+- reset
+
+Example:
+
+digitalWrite(13, HIGH)
+
+should cause:
+
+Arduino GPIO 13
+        ↓
+connection
+        ↓
+LED
+        ↓
+LED state = ON
+        ↓
+3D LED visual state changes
+
+Likewise:
+
+digitalWrite(13, LOW)
+
+should turn the LED off.
+
+==================================================
+TIMING
+==================================================
+
+Do not block the browser UI with infinite loops.
+
+Use:
+
+- scheduler
+- async execution
+- Web Worker if necessary
+- requestAnimationFrame for visualization
+
+The UI must remain responsive while simulation is running.
+
+==================================================
+SERIAL MONITOR
+==================================================
+
+Create a serial console at the bottom/right of the application.
+
+Example:
+
+[Serial Monitor]
+
+> Arduino initialized
+> LED ON
+> LED OFF
+> LED ON
+
+Include:
+
+- clear
+- auto-scroll
+- timestamps if useful
+- connection/status indicator
+
+==================================================
+PROJECT SYSTEM
+==================================================
+
+Users should be able to:
+
+New Project
+Save Project
+Load Project
+Delete Project
+Rename Project
+
+Store projects locally.
+
+A project should contain:
+
+- components
+- positions
+- rotations
+- properties
+- connections
+- source code
+- board configuration
+- project metadata
+
+Create a JSON-compatible project format.
+
+Example concept:
+
+{
+    "version": "0.1",
+    "name": "Blink Demo",
+    "components": [],
+    "connections": [],
+    "code": "...",
+    "settings": {}
+}
+
+Design this format for future compatibility.
+
+==================================================
+USER INTERFACE
+==================================================
+
+Layout:
+
+-------------------------------------------------------------
+TOP BAR
+-------------------------------------------------------------
+Project name
+New
+Save
+Undo
+Redo
+RUN
+STOP
+RESET
+-------------------------------------------------------------
+
+LEFT SIDEBAR
+
+Components
+
+Boards
+- Arduino Uno
+- ESP32
+- Raspberry Pi
+
+Basic
+- LED
+- Resistor
+- Button
+- Potentiometer
+- Buzzer
+
+Actuators
+- Servo
+
+Sensors
+- Ultrasonic
+
+-------------------------------------------------------------
+
+CENTER
+
+3D WORKSPACE
+
+-------------------------------------------------------------
+
+RIGHT SIDEBAR
+
+Code Editor
+
+-------------------------------------------------------------
+
+BOTTOM
+
+Serial Monitor
+
+-------------------------------------------------------------
+
+Make panels resizable if practical.
+
+==================================================
+INTERACTION
+==================================================
+
+Support:
+
+- drag components into scene
+- select
+- multi-select if easy
+- move
+- rotate
+- delete
+- connect pins
+- delete wires
+- inspect properties
+
+Use keyboard shortcuts where useful:
+
+Delete
+Ctrl+S
+Ctrl+Z
+Ctrl+Shift+Z
+Space → run/pause if appropriate
+
+==================================================
+VISUAL QUALITY
+==================================================
+
+Do not produce a generic CRUD dashboard.
+
+The 3D workspace should feel like an engineering simulator.
+
+Use:
+
+- dark professional interface
+- subtle borders
+- clear hierarchy
+- technical typography
+- compact developer-tool controls
+- clean icons
+- restrained animations
+
+Avoid:
+
+- excessive gradients
+- giant cards
+- excessive rounded containers
+- meaningless animations
+- fake statistics
+- fake AI features
+
+The product must communicate:
+
+"engineering tool"
+
+not:
+
+"AI startup landing page."
+
+==================================================
+ERROR HANDLING
+==================================================
+
+The simulator must not silently fail.
+
+Examples:
+
+Invalid pin connection:
+
+"Cannot connect: GPIO 13 is already connected."
+
+Unsupported function:
+
+"Function analogWrite() is not supported by this virtual board."
+
+Invalid code:
+
+"Unable to parse line 14."
+
+Simulation error:
+
+"Simulation stopped: invalid device state."
+
+Show useful errors in the UI.
+
+==================================================
+DEVELOPER EXPERIENCE
+==================================================
+
+Write clean, modular TypeScript.
+
+Avoid:
+
+- giant files
+- duplicated logic
+- magic numbers
+- deeply coupled components
+- simulation logic inside UI components
+
+Use reusable abstractions.
+
+Add comments where architecture is non-obvious.
+
+==================================================
+TESTING
+==================================================
+
+At minimum create tests for:
+
+1. GPIO HIGH/LOW
+2. digitalRead
+3. PWM state
+4. LED behavior
+5. connections
+6. project serialization
+7. project loading
+8. reset
+9. delay/timing behavior
+
+The Blink demo must be reproducible.
+
+==================================================
+SEED PROJECTS
+==================================================
+
+Create at least these example projects:
+
+1. Blink LED
+
+Arduino → resistor → LED
+
+2. Button LED
+
+Button → Arduino input
+LED → Arduino output
+
+3. Servo Control
+
+Arduino → servo
+
+4. Distance Sensor
+
+HC-SR04 → Arduino
+Arduino → serial monitor
+
+These should be selectable from:
+
+"Example Projects"
+
+==================================================
+IMPORTANT DEVELOPMENT RULES
+==================================================
+
+RULE 1:
+
+Do NOT build features just because they sound cool.
+
+Every feature must support the core simulator.
+
+RULE 2:
+
+Do NOT spend large amounts of time finding perfect 3D models.
+
+For MVP, use procedural/basic geometry or simple local assets.
+
+Visual quality matters, but functionality comes first.
+
+RULE 3:
+
+Do NOT implement full electrical circuit physics in MVP.
+
+Implement logical digital/pin simulation first.
+
+Later versions can introduce:
+
+- voltage
+- current
+- resistance
+- power
+- analog circuit simulation
+- I2C
+- SPI
+- UART
+- interrupts
+- timers
+
+RULE 4:
+
+Do NOT implement complete Raspberry Pi OS emulation.
+
+Not part of prototype 1.
+
+RULE 5:
+
+Do NOT create authentication unless required.
+
+Local-first prototype.
+
+RULE 6:
+
+Do NOT create a backend unless absolutely necessary.
+
+RULE 7:
+
+Do NOT rewrite working systems just to use a different library.
+
+RULE 8:
+
+Every development session must leave the repository in a working state.
+
+Never knowingly break the existing MVP.
+
+==================================================
+7-DAY DEVELOPMENT PLAN
+==================================================
+
+DAY 1 — FOUNDATION
+
+Build:
+
+- React/Vite/TypeScript setup
+- application shell
+- layout
+- 3D workspace
+- camera
+- grid
+- component sidebar
+- basic component registry
+- Zustand project state
+
+Acceptance:
+
+Application launches and user can place/select/move basic 3D objects.
+
+--------------------------------------------------
+
+DAY 2 — HARDWARE + WIRING
+
+Build:
+
+- Arduino Uno
+- LED
+- resistor
+- breadboard
+- pins
+- pin selection
+- wire creation
+- wire deletion
+- connection state
+
+Acceptance:
+
+User can physically construct:
+
+Arduino → resistor → LED → GND
+
+in the virtual workspace.
+
+--------------------------------------------------
+
+DAY 3 — SIMULATION ENGINE
+
+Build:
+
+- virtual board
+- virtual pins
+- GPIO
+- HIGH/LOW
+- component state
+- LED behavior
+- reset
+- simulation scheduler
+
+Acceptance:
+
+Programmatically changing Arduino GPIO 13 changes the virtual LED.
+
+--------------------------------------------------
+
+DAY 4 — CODE
+
+Build:
+
+- Monaco/code editor
+- Arduino-style API
+- setup()
+- loop()
+- pinMode
+- digitalWrite
+- delay
+- Serial
+- runtime/interpreter
+
+Acceptance:
+
+User can run:
+
+void setup() {
+    pinMode(13, OUTPUT);
+}
+
+void loop() {
+    digitalWrite(13, HIGH);
+    delay(1000);
+    digitalWrite(13, LOW);
+    delay(1000);
+}
+
+and see the LED blink.
+
+--------------------------------------------------
+
+DAY 5 — INTERACTION + COMPONENTS
+
+Add:
+
+- button
+- potentiometer
+- servo
+- ultrasonic sensor
+- analog input
+- PWM
+- digital input
+
+Acceptance:
+
+At least three useful circuits work.
+
+--------------------------------------------------
+
+DAY 6 — PROJECT SYSTEM + POLISH
+
+Build:
+
+- save
+- load
+- new project
+- example projects
+- project JSON format
+- serial monitor
+- errors
+- keyboard shortcuts
+- UI polish
+
+Acceptance:
+
+A user can create, save, reload and run a project.
+
+--------------------------------------------------
+
+DAY 7 — BETA HARDENING
+
+Focus ONLY on:
+
+- bugs
+- performance
+- UX
+- responsive layout
+- simulation stability
+- code cleanup
+- documentation
+- demo projects
+
+DO NOT start major new features on Day 7.
+
+==================================================
+DEFINITION OF DONE — PROTOTYPE 1
+==================================================
+
+Prototype 1 is DONE when this exact sequence works:
+
+Open application
+    ↓
+New Project
+    ↓
+Add Arduino
+    ↓
+Add breadboard
+    ↓
+Add resistor
+    ↓
+Add LED
+    ↓
+Connect wires
+    ↓
+Open code editor
+    ↓
+Write Blink program
+    ↓
+RUN
+    ↓
+Virtual LED physically changes state
+    ↓
+Serial Monitor shows output
+    ↓
+STOP
+    ↓
+RESET
+    ↓
+SAVE
+    ↓
+RELOAD
+    ↓
+RUN AGAIN
+
+Additionally:
+
+- ESP32 exists as an expandable board
+- Raspberry Pi exists as a visual GPIO board
+- components are registry-based
+- simulation is separated from rendering
+- projects have a serializable format
+- code/runtime is replaceable in the future
+- architecture is documented
+
+==================================================
+FUTURE ROADMAP — DO NOT IMPLEMENT YET
+==================================================
+
+Version 0.2:
+
+- more Arduino boards
+- more ESP32 boards
+- DHT11
+- OLED
+- LCD
+- relay
+- DC motor
+- stepper
+- LDR
+- MPU6050
+- I2C
+- SPI
+- UART
+- interrupts
+
+Version 0.3:
+
+- better analog simulation
+- electrical properties
+- voltage/current
+- power
+- circuit validation
+- realistic component models
+
+Version 0.4:
+
+- real C/C++ compilation
+- WebAssembly
+- firmware execution
+- ESP32 firmware simulation
+
+Version 0.5:
+
+- Python support
+- MicroPython
+- virtual Raspberry Pi environment
+
+Version 1:
+
+- cloud projects
+- collaboration
+- project sharing
+- real hardware deployment
+- hardware-in-the-loop
+- real Arduino/ESP32 connection
+
+==================================================
+CRITICAL INSTRUCTION FOR THE CODING AGENT
+==================================================
+
+You have limited development budget/time.
+
+Therefore:
+
+DO NOT attempt to build the entire roadmap.
+
+Build Prototype 1.
+
+Prioritize:
+
+FUNCTIONALITY > ARCHITECTURE > UX > VISUAL POLISH > EXTRA FEATURES
+
+Before implementing anything:
+
+1. Inspect the existing repository.
+2. Determine what already exists.
+3. Do not destroy working code.
+4. Create a clear implementation plan.
+5. Implement the smallest working vertical slice.
+6. Test it.
+7. Only then expand.
+
+When a feature is too complex for Prototype 1, create the correct abstraction/interface and a minimal implementation rather than spending the entire development session implementing the full feature.
+
+At the end of every development session:
+
+- verify the application builds
+- verify the main demo works
+- fix obvious errors
+- summarize what was implemented
+- identify the next highest-priority task
+
+NEVER replace working functionality with mock functionality just to make the UI look complete.
+
+The final result must be a genuinely interactive virtual electronics simulator, not a mockup.
+
+START NOW.
+
+First inspect the repository and existing files.
+
+Then create the foundation for Prototype 1.
+
+Do not ask unnecessary questions. Make reasonable engineering decisions and proceed.

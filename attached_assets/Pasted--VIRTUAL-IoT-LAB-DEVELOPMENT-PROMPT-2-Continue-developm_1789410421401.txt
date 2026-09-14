@@ -1,0 +1,888 @@
+# VIRTUAL IoT LAB — DEVELOPMENT PROMPT 2
+
+Continue development of the existing Virtual IoT Lab project.
+
+IMPORTANT:
+
+DO NOT rebuild the application from scratch.
+
+DO NOT replace existing working systems.
+
+Inspect the current codebase first and understand the existing architecture.
+
+The goal of this development pass is to significantly improve the 3D workspace so that components behave like objects inside a real electronics/CAD workspace.
+
+==================================================
+PRIMARY OBJECTIVE
+==================================================
+
+Make every component in the 3D workspace properly interactive and movable.
+
+Users must be able to:
+
+- select objects
+- move objects
+- rotate objects
+- delete objects
+- duplicate objects
+- inspect objects
+- move objects precisely
+- move objects without breaking their connections
+- manipulate multiple objects when practical
+
+The workspace should feel like a real engineering editor.
+
+==================================================
+1. OBJECT SELECTION
+==================================================
+
+Clicking a component should select it.
+
+Selected objects must have clear visual feedback.
+
+For example:
+
+- outline/highlight
+- subtle glow
+- selection box
+- transform gizmo
+
+Do not make the selection effect visually obnoxious.
+
+Clicking empty space should deselect.
+
+Support:
+
+Single click → select
+
+Ctrl/Cmd + click → multi-select if practical
+
+Escape → deselect
+
+==================================================
+2. 3D TRANSFORM CONTROLS
+==================================================
+
+Use Three.js transformation controls or an equivalent reliable implementation.
+
+Selected objects should expose:
+
+MOVE
+ROTATE
+
+Optional:
+
+SCALE
+
+Do NOT allow arbitrary scaling for physical electronic components by default because real hardware has fixed dimensions.
+
+Movement should use:
+
+X axis
+Y axis
+Z axis
+
+Rotation should support:
+
+X
+Y
+Z
+
+However, for the electronics workspace, make the default interaction intuitive:
+
+- objects should normally sit on the workspace/breadboard plane
+- movement should primarily occur horizontally
+- vertical movement should be available through a modifier or properties panel
+
+==================================================
+3. DRAGGING BEHAVIOR
+==================================================
+
+Allow users to click and drag a component.
+
+Example:
+
+User selects Arduino
+
+     ↓
+
+Drag
+
+     ↓
+
+Arduino follows mouse
+
+     ↓
+
+Release
+
+     ↓
+
+Arduino remains at new position
+
+The movement must feel smooth.
+
+Avoid:
+
+- teleporting
+- jitter
+- accidental rotation
+- camera movement while dragging
+- selecting objects behind the selected object
+
+==================================================
+4. CAMERA VS OBJECT INTERACTION
+==================================================
+
+This is extremely important.
+
+The user must be able to:
+
+- orbit the camera
+- pan
+- zoom
+
+WITHOUT accidentally moving components.
+
+Recommended interaction:
+
+Left click + drag on object:
+
+MOVE OBJECT
+
+Right click / middle mouse / designated gesture:
+
+CAMERA
+
+Empty workspace drag:
+
+CAMERA
+
+Use sensible interaction rules.
+
+If there is a conflict between object dragging and camera movement, prioritize predictable behavior.
+
+==================================================
+5. GRID SNAPPING
+==================================================
+
+Implement optional grid snapping.
+
+Add a workspace setting:
+
+Snap to Grid
+
+ON / OFF
+
+When enabled:
+
+Objects should snap to reasonable increments.
+
+For example:
+
+0.1
+0.25
+0.5
+
+depending on the workspace scale.
+
+Make the snapping configurable.
+
+Do NOT make snapping so aggressive that components feel impossible to position.
+
+==================================================
+6. BREADBOARD SNAP
+==================================================
+
+If feasible, implement intelligent breadboard positioning.
+
+When a component is moved near a breadboard:
+
+detect proximity
+
+and optionally snap the component to the breadboard.
+
+Example:
+
+LED
+
+     ↓
+
+drag toward breadboard
+
+     ↓
+
+snap to valid hole position
+
+This is especially important later for:
+
+- LEDs
+- resistors
+- sensors
+- jumper wires
+
+However:
+
+DO NOT spend the entire development session implementing perfect breadboard electrical geometry.
+
+A simple first version is enough.
+
+==================================================
+7. PIN-AWARE OBJECTS
+==================================================
+
+Every component must maintain a relationship between:
+
+3D position
+
+component geometry
+
+pin positions
+
+When the component moves:
+
+its pins MUST move with it.
+
+Example:
+
+Arduino position changes.
+
+Therefore:
+
+Arduino D13 position
+Arduino GND position
+Arduino 5V position
+
+must automatically update.
+
+Never store pin positions as independent static world coordinates.
+
+Pins should be calculated relative to their parent component.
+
+Concept:
+
+Component transform
+
+      ↓
+
+Local pin position
+
+      ↓
+
+World pin position
+
+==================================================
+8. WIRES MUST FOLLOW OBJECTS
+==================================================
+
+This is one of the most important requirements.
+
+If:
+
+Arduino D13
+      │
+      │
+      ▼
+     LED
+
+and the user moves the Arduino:
+
+        Arduino
+           \
+            \
+             \________ LED
+
+the wire must automatically update.
+
+If the LED moves:
+
+Arduino
+   
+    
+     \________ LED
+
+the wire follows the LED.
+
+The wire should NEVER remain floating at the old position.
+
+Connection data should be based on:
+
+component ID + pin ID
+
+NOT raw coordinates.
+
+Example:
+
+{
+    "from": {
+        "component": "arduino-1",
+        "pin": "D13"
+    },
+
+    "to": {
+        "component": "led-1",
+        "pin": "anode"
+    }
+}
+
+World coordinates should be calculated dynamically.
+
+==================================================
+9. WIRE VISUALIZATION
+==================================================
+
+Improve the virtual wires.
+
+Wires should:
+
+- connect exactly to pins
+- update dynamically
+- remain visible
+- have clean geometry
+- avoid obvious visual glitches
+
+Use curves/tubes/lines as appropriate.
+
+When a wire is selected:
+
+highlight it.
+
+Allow:
+
+Select wire
+Delete wire
+
+==================================================
+10. WIRING WHILE MOVING
+==================================================
+
+The user should be able to construct a circuit naturally.
+
+Example:
+
+1. Place Arduino.
+2. Place breadboard.
+3. Place resistor.
+4. Place LED.
+5. Wire them.
+6. Move LED.
+7. Wire automatically follows.
+
+Nothing should break.
+
+If an object moves, connections remain logically intact.
+
+==================================================
+11. OBJECT ROTATION
+==================================================
+
+Add rotation controls.
+
+Example:
+
+Select resistor
+
+Rotation:
+
+0°
+90°
+180°
+270°
+
+Provide intuitive controls.
+
+Keyboard shortcuts are encouraged.
+
+For example:
+
+R → rotate 90°
+
+Do not rotate around an arbitrary point.
+
+Objects should rotate around their intended center/origin.
+
+==================================================
+12. DUPLICATION
+==================================================
+
+Add duplicate functionality.
+
+Example:
+
+Ctrl/Cmd + D
+
+Selected component is duplicated.
+
+The duplicate must receive a new unique ID.
+
+IMPORTANT:
+
+Do NOT duplicate existing wire connections unless there is a clear reason.
+
+For example:
+
+Original LED:
+
+led-1
+
+Duplicate:
+
+led-2
+
+led-2 should initially be unconnected.
+
+==================================================
+13. DELETE
+==================================================
+
+Delete selected object with:
+
+Delete / Backspace
+
+When deleting a component:
+
+1. Remove the component.
+2. Remove its associated wires.
+3. Remove its simulation representation.
+4. Update Zustand/project state.
+
+Do not leave orphan connections.
+
+==================================================
+14. UNDO / REDO
+==================================================
+
+If the current architecture allows it, implement basic:
+
+Ctrl/Cmd + Z
+Ctrl/Cmd + Shift + Z
+
+Undo should support at least:
+
+- move
+- rotate
+- add
+- delete
+- wire creation
+- wire deletion
+
+If a complete history system would be too expensive for this development pass, create the correct abstraction and implement movement history first.
+
+==================================================
+15. PROPERTIES PANEL
+==================================================
+
+When an object is selected, display a properties panel.
+
+Example:
+
+SELECTED COMPONENT
+
+Arduino Uno
+
+Position
+
+X: 2.50
+Y: 0.00
+Z: -1.20
+
+Rotation
+
+X: 0°
+Y: 0°
+Z: 90°
+
+ID
+
+arduino-01
+
+Pins
+
+D0
+D1
+D2
+...
+D13
+A0
+...
+GND
+5V
+
+Allow numerical editing of:
+
+Position
+Rotation
+
+This provides precise control when mouse movement isn't enough.
+
+==================================================
+16. COMPONENT LOCKING
+==================================================
+
+Add an optional:
+
+LOCK OBJECT
+
+When locked:
+
+- cannot move
+- cannot rotate
+- can still be connected/interacted with depending on context
+
+This is useful for:
+
+breadboards
+Arduino boards
+power rails
+
+A small lock icon should indicate locked state.
+
+==================================================
+17. MULTI-SELECTION
+==================================================
+
+If practical, implement:
+
+Ctrl/Cmd + click
+
+and/or
+
+box selection.
+
+Selected objects can be moved together.
+
+Example:
+
+Arduino
+LED
+Resistor
+
+select all
+
+      ↓
+
+move together
+
+Their relative positions must remain unchanged.
+
+Their wires must continue following them.
+
+==================================================
+18. OBJECT LAYERS / Z-ORDER
+==================================================
+
+Prevent objects from becoming visually buried in confusing ways.
+
+Maintain sensible 3D depth.
+
+For example:
+
+Breadboard
+    ↓
+Components
+    ↓
+Wires
+
+However, do not fake depth using CSS.
+
+Everything should remain actual Three.js geometry.
+
+==================================================
+19. PHYSICAL SCALE
+==================================================
+
+Introduce a consistent world scale.
+
+For example:
+
+1 Three.js unit = 1 centimeter
+
+OR another clearly defined scale.
+
+Choose ONE system and document it.
+
+All components should use the same scale.
+
+Arduino should not accidentally be 100× larger than an LED.
+
+The exact real-world dimensions can initially be approximate.
+
+Consistency matters more than perfect measurements.
+
+==================================================
+20. WORKSPACE CONTROLS
+==================================================
+
+Add a small workspace toolbar:
+
+[ Select ]
+[ Move ]
+[ Rotate ]
+[ Wire ]
+
+Optional:
+
+[ Snap ]
+[ Grid ]
+
+The user should understand what mode they are currently using.
+
+Avoid hidden interaction mechanics where possible.
+
+==================================================
+21. PERFORMANCE
+==================================================
+
+Do not recreate entire 3D scenes on every mouse movement.
+
+Use efficient state updates.
+
+Avoid unnecessary React re-renders.
+
+For dragging:
+
+update transforms efficiently.
+
+Do not rebuild:
+
+- all wires
+- all components
+- simulation state
+
+every frame.
+
+Only affected objects/connections should update.
+
+==================================================
+22. STATE ARCHITECTURE
+==================================================
+
+Maintain a clean separation:
+
+PROJECT STATE
+
+components
+connections
+code
+metadata
+
+SIMULATION STATE
+
+GPIO
+sensor values
+component runtime state
+execution
+
+VIEW STATE
+
+selected objects
+camera
+workspace settings
+transform mode
+
+Do NOT mix these unnecessarily.
+
+Example:
+
+projectStore
+
+simulationStore
+
+workspaceStore
+
+==================================================
+23. PERSISTENCE
+==================================================
+
+When an object moves:
+
+its new position must be saved.
+
+When the project is reloaded:
+
+the object must appear exactly where it was saved.
+
+Same for:
+
+rotation
+connections
+properties
+
+==================================================
+24. ACCEPTANCE TEST
+==================================================
+
+The following test MUST work:
+
+STEP 1
+
+Create Arduino Uno.
+
+STEP 2
+
+Create breadboard.
+
+STEP 3
+
+Create resistor.
+
+STEP 4
+
+Create LED.
+
+STEP 5
+
+Move all objects around the workspace.
+
+STEP 6
+
+Rotate the LED.
+
+STEP 7
+
+Connect:
+
+Arduino D13
+     ↓
+Resistor
+     ↓
+LED
+     ↓
+GND
+
+STEP 8
+
+Move Arduino.
+
+EXPECTED:
+
+The wires follow Arduino pins.
+
+STEP 9
+
+Move LED.
+
+EXPECTED:
+
+The wires follow LED pins.
+
+STEP 10
+
+Save project.
+
+STEP 11
+
+Reload project.
+
+EXPECTED:
+
+All objects appear at the same positions and rotations.
+
+EXPECTED:
+
+All connections remain intact.
+
+STEP 12
+
+Run Blink simulation.
+
+EXPECTED:
+
+LED still responds correctly.
+
+==================================================
+VISUAL QUALITY TARGET
+==================================================
+
+The workspace should feel closer to:
+
+CAD / engineering software
+
+than:
+
+drag-and-drop website.
+
+Use subtle visual feedback.
+
+Examples:
+
+Selected object
+→ outline
+
+Hovered object
+→ subtle highlight
+
+Selected pin
+→ clear indicator
+
+Active wire
+→ highlight
+
+Locked object
+→ lock indicator
+
+Snap point
+→ subtle visual guide
+
+==================================================
+DO NOT DO
+==================================================
+
+Do NOT:
+
+- rebuild the project
+- replace Three.js
+- replace React
+- introduce a backend
+- create authentication
+- add AI
+- create fake simulation behavior
+- hard-code coordinates
+- hard-code wires
+- create CSS-based fake 3D objects
+- add dozens of components
+- spend hours making perfect 3D models
+
+This development pass is specifically about:
+
+3D interaction
++
+object manipulation
++
+pin-aware positioning
++
+dynamic wiring
+
+==================================================
+FINAL CHECK
+==================================================
+
+Before declaring the task complete:
+
+Run the application.
+
+Test:
+
+✓ Select
+✓ Move
+✓ Rotate
+✓ Delete
+✓ Duplicate
+✓ Snap
+✓ Pin interaction
+✓ Wire creation
+✓ Wire deletion
+✓ Moving connected components
+✓ Saving positions
+✓ Loading positions
+✓ Existing simulation still works
+
+If something from the existing MVP breaks, FIX IT before adding anything else.
+
+Keep the project in a working state.
+
+Do not stop at a visual mockup.
+
+Implement the functionality.
+
+START BY INSPECTING THE EXISTING CODEBASE.

@@ -1,6 +1,6 @@
-# [Project name]
+# Virtual IoT Lab
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A local-first browser laboratory for placing, wiring, programming, and simulating virtual electronics.
 
 ## Run & Operate
 
@@ -22,15 +22,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/virtual-iot-lab/src/App.tsx` — application shell, workspace interaction, project history, and simulation controls.
+- `artifacts/virtual-iot-lab/src/lib/component-registry.ts` — registry definitions, dimensions, local pin offsets, and component factories.
+- `artifacts/virtual-iot-lab/src/lib/runtime.ts` — supported Arduino-style runtime and serial output.
+- `artifacts/virtual-iot-lab/src/lib/project-storage.ts` — local project persistence and backward-compatible normalization.
+- `artifacts/virtual-iot-lab/src/index.css` — engineering workspace theme and component geometry.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The prototype is local-first: project JSON is stored in browser localStorage, with no authentication, database, or backend dependency.
+- Component definitions own their dimensions and local pin offsets; wire endpoints store component IDs and pin IDs, then derive screen positions from the current component transform.
+- The Arduino runtime is intentionally controlled and deterministic rather than a full C++ compiler, so the UI/hardware contract can later be swapped for a WebAssembly runtime.
+- Project state, simulation state, and workspace/view state stay separate in the frontend even though the first prototype keeps them in one feature module.
+- Top-view workspace coordinates use a documented scale of 1 workspace unit = 24 pixels; z is persisted for future 3D elevation while normal movement stays on the work plane.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The app provides an engineering-style workspace for a seeded Arduino Blink circuit and expandable virtual hardware experiments. Users can add registry-defined components, select and move them with optional grid snapping, rotate/lock/duplicate/delete them, connect pins with logical wires, run the controlled Arduino-style runtime, inspect serial output, and save/load projects from local storage.
 
 ## User preferences
 

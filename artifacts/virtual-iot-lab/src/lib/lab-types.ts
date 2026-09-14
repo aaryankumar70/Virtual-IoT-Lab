@@ -8,7 +8,9 @@ export interface LabComponent {
   kind: ComponentKind;
   x: number;
   y: number;
+  z: number;
   rotation: number;
+  locked?: boolean;
   properties: Record<string, string>;
 }
 

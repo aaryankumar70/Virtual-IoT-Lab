@@ -1,0 +1,19 @@
+kind = "design-system"
+previewPath = "/virtual-iot-lab-design-system/"
+title = "Virtual IoT Lab Design System"
+description = "A reusable engineering-tool visual system extracted from Virtual IoT Lab: instrument-panel surfaces, teal signal controls, amber hardware accents, compact monospace metadata, and precise editor states for electronics workspaces."
+version = "1.0.0"
+id = "artifacts/virtual-iot-lab-design-system"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/virtual-iot-lab-design-system/" ]
+localPort = 22665
+
+[services.development]
+run = "pnpm --filter @workspace/virtual-iot-lab-design-system run dev"
+
+[services.env]
+PORT = "22665"
+BASE_PATH = "/virtual-iot-lab-design-system/"

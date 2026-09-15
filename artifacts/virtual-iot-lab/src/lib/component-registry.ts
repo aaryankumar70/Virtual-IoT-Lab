@@ -1,5 +1,12 @@
 import type { ComponentKind, LabComponent } from './lab-types';
 
+export type Pin3DType = 'signal' | 'power';
+export interface PinDefinition3D {
+  id: string;
+  type: Pin3DType;
+  position: [number, number, number];
+}
+
 export interface ComponentDefinition {
   type: string;
   label: string;
@@ -103,4 +110,41 @@ export const getPinWorldPosition = (component: LabComponent, pin: string) => {
     x: component.x + center.x + localX * Math.cos(radians) - localY * Math.sin(radians),
     y: component.y + center.y + localX * Math.sin(radians) + localY * Math.cos(radians),
   };
+};
+
+const WORLD_UNIT_PX = 24;
+
+export const getPinDefinition3D = (type: string, pin: string): PinDefinition3D => {
+  const definition = getDefinition(type);
+  const size = getComponentSize(type);
+  const offset = getPinOffset(type, pin);
+  return {
+    id: pin,
+    type: pin === 'GND' || pin.startsWith('rail') ? 'power' : 'signal',
+    position: [
+      (offset.x - size.width / 2) / WORLD_UNIT_PX,
+      0.22,
+      (offset.y - size.height / 2) / WORLD_UNIT_PX,
+    ],
+  };
+};
+
+export const getComponentWorldPosition = (component: LabComponent): [number, number, number] => {
+  const size = getComponentSize(component.type);
+  return [
+    component.x / WORLD_UNIT_PX + size.width / (WORLD_UNIT_PX * 2),
+    component.z / WORLD_UNIT_PX,
+    component.y / WORLD_UNIT_PX + size.height / (WORLD_UNIT_PX * 2),
+  ];
+};
+
+export const getPinWorldPosition3D = (component: LabComponent, pin: string): [number, number, number] => {
+  const [originX, originY, originZ] = getComponentWorldPosition(component);
+  const [localX, localY, localZ] = getPinDefinition3D(component.type, pin).position;
+  const radians = (component.rotation * Math.PI) / 180;
+  return [
+    originX + localX * Math.cos(radians) - localZ * Math.sin(radians),
+    originY + localY,
+    originZ + localX * Math.sin(radians) + localZ * Math.cos(radians),
+  ];
 };

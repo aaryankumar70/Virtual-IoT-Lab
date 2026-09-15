@@ -1,0 +1,714 @@
+# VIRTUAL IoT LAB — 3D WORKSPACE CONVERSION
+
+You are continuing an EXISTING Virtual IoT Lab project.
+
+I have provided the existing source code.
+
+DO NOT rebuild the project from scratch.
+
+DO NOT replace the current architecture unnecessarily.
+
+DO NOT throw away the existing project model, component registry, wire model, movement system, persistence, selection, undo/redo, or runtime.
+
+First inspect the existing implementation.
+
+==================================================
+CURRENT IMPLEMENTATION
+==================================================
+
+The application currently contains:
+
+- React
+- TypeScript
+- Vite
+- HTML/CSS component rendering
+- SVG wire rendering
+- component registry
+- LabComponent model
+- Wire model
+- project persistence
+- selection
+- multi-selection
+- movement
+- rotation
+- deletion
+- duplication
+- locking
+- grid snapping
+- undo/redo
+- property inspector
+- code editor
+- serial monitor
+- basic Blink runtime
+
+The current workspace is a TOP-DOWN 2D editor.
+
+The goal of this task is to introduce a REAL 3D workspace while preserving the existing application architecture.
+
+==================================================
+CRITICAL RULE
+==================================================
+
+DO NOT rewrite the whole application.
+
+The existing project/data architecture is useful.
+
+Replace the VISUAL WORKSPACE layer.
+
+Preserve the existing project state.
+
+The architecture should become:
+
+Project State
+      ↓
+3D Workspace
+      ↓
+3D Components
+      ↓
+3D Pin Anchors
+      ↓
+3D Wires
+
+==================================================
+TECHNOLOGY
+==================================================
+
+Install and use:
+
+three
+@react-three/fiber
+@react-three/drei
+
+Use React Three Fiber.
+
+Do NOT introduce another rendering engine.
+
+Do NOT implement fake 3D using CSS.
+
+==================================================
+STEP 1 — 3D CANVAS
+==================================================
+
+Create a dedicated component:
+
+VirtualLab3D.tsx
+
+It should contain:
+
+<Canvas>
+
+Camera
+
+Lighting
+
+Grid
+
+OrbitControls
+
+3D components
+
+3D wires
+
+The existing left palette, right code editor, inspector and bottom serial monitor should remain HTML/React UI outside the Canvas.
+
+Architecture:
+
+┌────────────────────────────────────────────┐
+│ Command Bar                                │
+├───────────┬───────────────────┬────────────┤
+│ Palette   │                   │ Code       │
+│           │    THREE.JS       │ Editor     │
+│           │    CANVAS         │            │
+│           │                   │ Inspector  │
+├───────────┴───────────────────┴────────────┤
+│ Serial Monitor                             │
+└────────────────────────────────────────────┘
+
+==================================================
+STEP 2 — COORDINATE SYSTEM
+==================================================
+
+The existing model contains:
+
+x
+y
+z
+rotation
+
+Keep these fields.
+
+Define a consistent 3D mapping.
+
+Recommended:
+
+project.x → Three.js X
+project.y → Three.js Z
+project.z → Three.js Y
+
+The workspace should be primarily horizontal.
+
+Document this coordinate system.
+
+Do NOT create a second permanent position system.
+
+Project state remains the source of truth.
+
+==================================================
+STEP 3 — COMPONENT 3D REPRESENTATIONS
+==================================================
+
+Create dedicated React Three Fiber components.
+
+Structure:
+
+src/
+  components3d/
+    VirtualLab3D.tsx
+    ArduinoUno3D.tsx
+    Breadboard3D.tsx
+    LED3D.tsx
+    Resistor3D.tsx
+    PushButton3D.tsx
+    Potentiometer3D.tsx
+    Pin3D.tsx
+    Wire3D.tsx
+
+Do NOT put all 3D geometry inside App.tsx.
+
+==================================================
+ARDUINO UNO
+==================================================
+
+Create a recognizable Arduino Uno R3 using Three.js primitives.
+
+Include approximately:
+
+- green PCB
+- USB connector
+- main MCU
+- pin headers
+- major component shapes
+- readable "Arduino UNO" label if practical
+
+It does NOT need photorealistic geometry.
+
+Correct proportions and recognizability are more important.
+
+==================================================
+BREADBOARD
+==================================================
+
+Create a recognizable half-size breadboard.
+
+Include:
+
+- white body
+- center divider
+- rows of holes
+- power rails
+
+Do not create hundreds of expensive individual meshes if unnecessary.
+
+Use instancing or efficient geometry if appropriate.
+
+==================================================
+LED
+==================================================
+
+Create:
+
+- LED body
+- dome
+- two legs
+
+When runtime LED state is ON:
+
+- increase brightness
+- use emissive material
+- add subtle glow
+
+When OFF:
+
+- normal appearance
+
+The LED visual state must eventually be driven by simulation state.
+
+==================================================
+RESISTOR
+==================================================
+
+Create:
+
+- cylindrical body
+- two metal leads
+- simple resistor bands
+
+==================================================
+OTHER COMPONENTS
+==================================================
+
+Create basic 3D representations for:
+
+- pushbutton
+- potentiometer
+
+Do not spend excessive time making these photorealistic.
+
+==================================================
+STEP 4 — PIN SYSTEM
+==================================================
+
+The existing pins use 2D offsets.
+
+Extend the architecture so pins can have 3D local positions.
+
+Create a structure conceptually similar to:
+
+PinDefinition:
+
+{
+    id,
+    type,
+    position: [x, y, z]
+}
+
+Pins belong to components.
+
+They are NOT independent world coordinates.
+
+World position is calculated:
+
+component transform
+        +
+local pin position
+        ↓
+world pin position
+
+When the component moves:
+
+pins move.
+
+When the component rotates:
+
+pins move.
+
+==================================================
+STEP 5 — PIN INTERACTION
+==================================================
+
+Pins must be actual 3D interactive objects.
+
+Hover:
+
+highlight.
+
+Click:
+
+select.
+
+Wire mode:
+
+click source pin
+      ↓
+temporary wire
+      ↓
+click destination pin
+      ↓
+create connection
+
+Preserve the existing:
+
+componentId + pin
+
+wire representation.
+
+==================================================
+STEP 6 — 3D WIRES
+==================================================
+
+Replace the current SVG wire rendering with 3D wires.
+
+Existing model:
+
+{
+    from: {
+        componentId,
+        pin
+    },
+    to: {
+        componentId,
+        pin
+    }
+}
+
+Keep this.
+
+Do NOT store permanent world coordinates in Wire.
+
+Calculate wire endpoints dynamically.
+
+Example:
+
+Arduino D13
+      │
+      │
+      ▼
+     LED
+
+If Arduino moves:
+
+Arduino
+        
+         
+          LED
+
+wire follows.
+
+If LED moves:
+
+Arduino
+     
+      
+       LED
+
+wire follows.
+
+If either component rotates:
+
+wire follows the rotated pin.
+
+==================================================
+STEP 7 — OBJECT MOVEMENT
+==================================================
+
+The current application already has a working 2D movement system.
+
+DO NOT delete it conceptually.
+
+Implement equivalent 3D manipulation.
+
+Selected object:
+
+- move
+- rotate
+
+Use Drei TransformControls or a reliable equivalent.
+
+Movement should primarily happen on the horizontal workspace plane.
+
+Do NOT allow uncontrolled floating in 3D by default.
+
+The user should be able to move components naturally around the lab.
+
+==================================================
+STEP 8 — CAMERA / OBJECT CONTROL
+==================================================
+
+Avoid interaction conflicts.
+
+Camera:
+
+OrbitControls
+
+Object:
+
+TransformControls / drag plane
+
+Recommended:
+
+Empty workspace → camera interaction
+
+Selected component → object manipulation
+
+Wire mode → pin interaction
+
+The user must not accidentally rotate the camera when trying to move a component.
+
+==================================================
+STEP 9 — GRID
+==================================================
+
+Preserve existing snap-to-grid functionality.
+
+Translate it into 3D world coordinates.
+
+Default:
+
+objects snap to the horizontal grid.
+
+Do not make snapping frustrating.
+
+==================================================
+STEP 10 — ROTATION
+==================================================
+
+Preserve existing rotation behavior.
+
+Keyboard:
+
+R
+
+should rotate the selected component by 90 degrees where appropriate.
+
+Inspector rotation values should update the 3D object.
+
+==================================================
+STEP 11 — INSPECTOR
+==================================================
+
+Existing property inspector must continue working.
+
+Changing:
+
+X
+
+Y
+
+Z
+
+Rotation
+
+must update the 3D object immediately.
+
+Moving an object in 3D must update the inspector.
+
+There must be ONE source of truth.
+
+==================================================
+STEP 12 — SAVE / LOAD
+==================================================
+
+Existing project persistence must continue working.
+
+Save:
+
+position
+rotation
+properties
+components
+wires
+code
+
+Load:
+
+restore the exact circuit.
+
+The project should remain JSON-compatible.
+
+==================================================
+STEP 13 — EXISTING RUNTIME
+==================================================
+
+Do NOT break the current Blink runtime.
+
+The current runtime exposes:
+
+runtime.ledOn
+
+Continue using it for this stage.
+
+Connect:
+
+runtime.ledOn
+      ↓
+LED3D
+      ↓
+visual state
+
+This is temporary.
+
+Later we will replace the runtime with a real instruction interpreter.
+
+==================================================
+STEP 14 — DO NOT BUILD YET
+==================================================
+
+DO NOT implement:
+
+- full Arduino C++ compiler
+- WebAssembly
+- realistic electrical physics
+- Raspberry Pi OS
+- cloud backend
+- authentication
+- multiplayer
+- AI
+- advanced circuit analysis
+
+Those are later phases.
+
+==================================================
+ACCEPTANCE TEST
+==================================================
+
+The following must work:
+
+1. Open application.
+
+2. See actual Three.js 3D workspace.
+
+3. Add Arduino.
+
+4. Add breadboard.
+
+5. Add resistor.
+
+6. Add LED.
+
+7. Rotate Arduino.
+
+8. Move Arduino.
+
+9. Move LED.
+
+10. Select pins.
+
+11. Connect:
+
+Arduino D13
+      ↓
+Resistor
+      ↓
+LED
+      ↓
+Arduino GND
+
+12. Move Arduino.
+
+EXPECTED:
+
+3D wires follow the Arduino pins.
+
+13. Move LED.
+
+EXPECTED:
+
+3D wires follow the LED pins.
+
+14. Rotate LED.
+
+EXPECTED:
+
+wire follows the rotated pin positions.
+
+15. Save.
+
+16. Reload.
+
+EXPECTED:
+
+Objects return to correct positions.
+
+EXPECTED:
+
+Connections remain intact.
+
+17. Run existing Blink demo.
+
+EXPECTED:
+
+3D LED turns ON/OFF according to runtime.ledOn.
+
+==================================================
+PERFORMANCE
+==================================================
+
+Avoid unnecessary React rerenders.
+
+Do not rebuild the entire 3D scene when one object moves.
+
+Keep simulation state separate from visual state.
+
+Use memoization where appropriate.
+
+Avoid thousands of individual expensive meshes if unnecessary.
+
+==================================================
+DEVELOPMENT ORDER
+==================================================
+
+Implement in this exact order.
+
+PHASE 1
+
+Three.js Canvas.
+
+PHASE 2
+
+Arduino3D + LED3D.
+
+PHASE 3
+
+Connect project state to 3D transforms.
+
+PHASE 4
+
+Selection.
+
+PHASE 5
+
+Movement.
+
+PHASE 6
+
+Pin anchors.
+
+PHASE 7
+
+3D wires.
+
+PHASE 8
+
+Rotation.
+
+PHASE 9
+
+Existing Blink runtime integration.
+
+PHASE 10
+
+Save/load testing.
+
+PHASE 11
+
+Remaining basic components.
+
+==================================================
+IMPORTANT
+==================================================
+
+If something becomes too complicated:
+
+DO NOT create a fake implementation that pretends to work.
+
+Create the correct abstraction and implement the smallest functional version.
+
+Do not spend the development budget on cosmetic polish while core interaction is broken.
+
+The priority is:
+
+REAL 3D INTERACTION
+>
+PIN SYSTEM
+>
+WIRE SYSTEM
+>
+SIMULATION
+>
+POLISH
+
+==================================================
+FINAL REQUIREMENT
+==================================================
+
+At the end of this task the application must no longer be a 2D CSS/SVG circuit editor.
+
+It must have a functioning Three.js-based 3D electronics workspace while retaining the existing React UI and project architecture.
+
+START BY INSPECTING THE EXISTING CODEBASE.
+
+Do not rewrite working systems.
+
+Implement the first vertical slice:
+
+Arduino Uno + LED + resistor + 3D wires + movement.

@@ -23,6 +23,8 @@ A local-first browser laboratory for placing, wiring, programming, and simulatin
 ## Where things live
 
 - `artifacts/virtual-iot-lab/src/App.tsx` — application shell, workspace interaction, project history, and simulation controls.
+- `artifacts/virtual-iot-lab/src/components3d/VirtualLab3D.tsx` — React Three Fiber scene, camera, controls, transform handling, and WebGL capability guard.
+- `artifacts/virtual-iot-lab/src/components3d/` — reusable Arduino, breadboard, LED, resistor, button, potentiometer, pin, and wire meshes.
 - `artifacts/virtual-iot-lab/src/lib/component-registry.ts` — registry definitions, dimensions, local pin offsets, and component factories.
 - `artifacts/virtual-iot-lab/src/lib/runtime.ts` — supported Arduino-style runtime and serial output.
 - `artifacts/virtual-iot-lab/src/lib/project-storage.ts` — local project persistence and backward-compatible normalization.
@@ -32,9 +34,11 @@ A local-first browser laboratory for placing, wiring, programming, and simulatin
 
 - The prototype is local-first: project JSON is stored in browser localStorage, with no authentication, database, or backend dependency.
 - Component definitions own their dimensions and local pin offsets; wire endpoints store component IDs and pin IDs, then derive screen positions from the current component transform.
+- The 3D workspace keeps the persisted model as its only coordinate source: project `x` maps to Three.js `X`, project `y` maps to Three.js `Z`, and project `z` maps to Three.js `Y`; component-local pin anchors are transformed at render time.
 - The Arduino runtime is intentionally controlled and deterministic rather than a full C++ compiler, so the UI/hardware contract can later be swapped for a WebAssembly runtime.
 - Project state, simulation state, and workspace/view state stay separate in the frontend even though the first prototype keeps them in one feature module.
 - Top-view workspace coordinates use a documented scale of 1 workspace unit = 24 pixels; z is persisted for future 3D elevation while normal movement stays on the work plane.
+- React Three Fiber is the only 3D renderer. Orbit controls handle the camera, while Drei transform controls constrain object movement to the horizontal X/Z plane and preserve the existing snap increments.
 
 ## Product
 

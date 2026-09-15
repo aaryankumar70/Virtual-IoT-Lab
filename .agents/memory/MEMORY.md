@@ -1,0 +1,1 @@
+- [Virtual Lab WebGL preview](virtual-lab-webgl-preview.md) — the managed browser preview may lack a WebGL context; keep the real R3F path and show an explicit capability state instead of falling back to fake 3D.

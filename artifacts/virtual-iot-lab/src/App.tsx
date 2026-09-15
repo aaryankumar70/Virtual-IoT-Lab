@@ -37,6 +37,7 @@ import { COMPONENT_REGISTRY, getComponentSize, getDefinition, getPinOffset, getP
 import { DEFAULT_CODE, createInitialRuntime, resetRuntime, tickRuntime, validateSketch } from './lib/runtime';
 import { loadProject, saveProject } from './lib/project-storage';
 import type { LabComponent, Project, SerialLine, Wire } from './lib/lab-types';
+import { VirtualLab3D } from './components3d/VirtualLab3D';
 import './index.css';
 
 const queryClient = new QueryClient();
@@ -172,7 +173,7 @@ function NodeShape({ component, selected, ledOn, mode, wireStart, onSelect, onDr
   </div>;
 }
 
-function Workspace({ project, selectedIds, selectedWireId, ledOn, mode, snapToGrid, snapStep, wireStart, onSelect, onSelectWire, onBeginHistory, onEndHistory, onMove, onRotate, onDelete, onPinSelect, onCreateWire, onModeChange, onSnapChange, onSnapStepChange }: {
+function LegacyWorkspace({ project, selectedIds, selectedWireId, ledOn, mode, snapToGrid, snapStep, wireStart, onSelect, onSelectWire, onBeginHistory, onEndHistory, onMove, onRotate, onDelete, onPinSelect, onCreateWire, onModeChange, onSnapChange, onSnapStepChange }: {
   project: Project;
   selectedIds: string[];
   selectedWireId: string | null;
@@ -284,6 +285,64 @@ function Workspace({ project, selectedIds, selectedWireId, ledOn, mode, snapToGr
   </section>;
 }
 
+function Workspace({ project, selectedIds, selectedWireId, ledOn, mode, snapToGrid, snapStep, wireStart, onSelect, onSelectWire, onBeginHistory, onEndHistory, onTransform, onPinSelect, onModeChange, onSnapChange, onSnapStepChange }: {
+  project: Project;
+  selectedIds: string[];
+  selectedWireId: string | null;
+  ledOn: boolean;
+  mode: WorkspaceMode;
+  snapToGrid: boolean;
+  snapStep: number;
+  wireStart: { componentId: string; pin: string } | null;
+  onSelect: (id: string | null, additive?: boolean) => void;
+  onSelectWire: (id: string) => void;
+  onBeginHistory: () => void;
+  onEndHistory: () => void;
+  onTransform: (id: string, x: number, y: number, rotation: number) => void;
+  onPinSelect: (componentId: string, pin: string) => void;
+  onModeChange: (mode: WorkspaceMode) => void;
+  onSnapChange: (enabled: boolean) => void;
+  onSnapStepChange: (step: number) => void;
+}) {
+  return <section className="workspace-panel workspace-3d-panel">
+    <div className="workspace-topline">
+      <div className="workspace-toolbar" onClick={(event) => event.stopPropagation()}>
+        {([
+          ['select', <MousePointer2 size={12} />, 'Select'],
+          ['move', <Move3d size={12} />, 'Move'],
+          ['rotate', <Rotate3d size={12} />, 'Rotate'],
+          ['wire', <CircleDot size={12} />, 'Wire'],
+        ] as const).map(([value, icon, label]) => <button key={value} className={`mode-btn ${mode === value ? 'active' : ''}`} onClick={() => onModeChange(value)} title={`${label} mode`}>{icon}<span>{label}</span></button>)}
+        <span className="toolbar-divider" />
+        <button className={`mode-btn snap-btn ${snapToGrid ? 'active' : ''}`} onClick={() => onSnapChange(!snapToGrid)} title="Toggle grid snapping"><ScanLine size={12} /><span>Snap</span></button>
+        <select className="snap-select" value={snapStep} onChange={(event) => onSnapStepChange(Number(event.target.value))} aria-label="Snap spacing">
+          <option value="6">0.25u</option><option value="12">0.5u</option><option value="24">1u</option>
+        </select>
+      </div>
+      <span className="coord-readout">3D WORKSPACE · X/Z PLANE · 1u = 24px · GRID {snapStep}</span>
+    </div>
+    <div className="workspace-canvas workspace-3d-canvas">
+      <VirtualLab3D
+        project={project}
+        selectedIds={selectedIds}
+        selectedWireId={selectedWireId}
+        ledOn={ledOn}
+        mode={mode}
+        snapToGrid={snapToGrid}
+        snapStep={snapStep}
+        wireStart={wireStart}
+        onSelect={onSelect}
+        onSelectWire={onSelectWire}
+        onBeginHistory={onBeginHistory}
+        onEndHistory={onEndHistory}
+        onTransform={onTransform}
+        onPinSelect={onPinSelect}
+      />
+      {wireStart && <div className="wire-instruction"><CircleDot size={12} /> Select a destination pin</div>}
+    </div>
+  </section>;
+}
+
 function CodeEditor({ code, onChange, error }: { code: string; onChange: (code: string) => void; error?: string }) {
   const lines = code.split('\n').length;
   return <div className="editor-wrap">
@@ -390,6 +449,7 @@ function Home() {
     setSelectedIds([]); notify(`${selectedIds.length} component${selectedIds.length === 1 ? '' : 's'} removed`);
   }, [commitProject, notify, selectedIds, selectedWireId]);
   const onMove = (targets: MoveTarget[]) => updateProjectLive((current) => ({ ...current, components: current.components.map((item) => { const target = targets.find((entry) => entry.id === item.id); return target && !item.locked ? { ...item, x: target.x, y: target.y } : item; }) }));
+  const onTransform = (id: string, x: number, y: number, rotation: number) => updateProjectLive((current) => ({ ...current, components: current.components.map((item) => item.id === id && !item.locked ? { ...item, x, y, rotation } : item) }));
   const onBeginHistory = () => { if (!dragHistoryRef.current) { setPast((history) => [...history.slice(-39), project]); setFuture([]); setDirty(true); dragHistoryRef.current = true; } };
   const onEndHistory = () => { dragHistoryRef.current = false; };
   const onRotate = (id: string) => commitProject((current) => ({ ...current, components: current.components.map((item) => item.id === id && !item.locked ? { ...item, rotation: (item.rotation + 90) % 360 } : item) }));
@@ -438,7 +498,7 @@ function Home() {
     <CommandBar projectName={project.name} running={runtime.running} dirty={dirty} canUndo={past.length > 0} canRedo={future.length > 0} onNew={onNew} onSave={onSave} onLoad={onLoad} onUndo={onUndo} onRedo={onRedo} onRun={onRun} onStop={onStop} onReset={onReset} />
     <main className="main-grid">
       <Palette onAdd={addComponent} onExample={loadExample} />
-      <Workspace project={project} selectedIds={selectedIds} selectedWireId={selectedWireId} ledOn={runtime.ledOn} mode={mode} snapToGrid={snapToGrid} snapStep={snapStep} wireStart={wireStart} onSelect={onSelect} onSelectWire={onSelectWire} onBeginHistory={onBeginHistory} onEndHistory={onEndHistory} onMove={onMove} onRotate={onRotate} onDelete={onDelete} onPinSelect={onPinSelect} onCreateWire={onCreateWire} onModeChange={setMode} onSnapChange={setSnapToGrid} onSnapStepChange={setSnapStep} />
+       <Workspace project={project} selectedIds={selectedIds} selectedWireId={selectedWireId} ledOn={runtime.ledOn} mode={mode} snapToGrid={snapToGrid} snapStep={snapStep} wireStart={wireStart} onSelect={onSelect} onSelectWire={onSelectWire} onBeginHistory={onBeginHistory} onEndHistory={onEndHistory} onTransform={onTransform} onPinSelect={onPinSelect} onModeChange={setMode} onSnapChange={setSnapToGrid} onSnapStepChange={setSnapStep} />
       <aside className="right-panel"><CodeEditor code={project.code} error={runtime.error} onChange={(code) => { commitProject((current) => ({ ...current, code })); if (runtime.error) setRuntime((previous) => ({ ...previous, error: undefined })); }} /><Inspector component={selected} multiCount={selectedIds.length} onChange={onPropertyChange} onToggleLock={onToggleLock} /></aside>
       <SerialMonitor lines={runtime.output} onClear={() => setRuntime((previous) => ({ ...previous, output: [] }))} />
     </main>
